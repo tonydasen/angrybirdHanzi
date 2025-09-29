@@ -1,541 +1,250 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>汉字射击游戏</title>
-    <div id="rotateHint">请横屏获得最佳体验<br>↻</div>
-        <style>
-        #rotateHint{position:fixed;inset:0;background:#000c;color:#fff;font-size:5vw;
-        display:flex;align-items:center;justify-content:center;z-index:9999;display:none;}
-        @media (orientation: portrait){#rotateHint{display:flex;}}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>汉字射击游戏</title>
+<style>
+/* 竖屏遮罩 */
+#rotateHint{position:fixed;inset:0;background:#000c;color:#fff;font-size:5vw;
+display:flex;align-items:center;justify-content:center;z-index:9999;display:none;}
+@media (orientation: portrait){#rotateHint{display:flex;}}
 
-            /* 竖屏时把整个容器横过来 */
-            @media (orientation: portrait) {
-            body {
-                height: 100vw;
-                width: 100vh;
-                transform: rotate(90deg);
-                transform-origin: left top;
-                overflow: hidden;
-                position: fixed;
-                top: 0;
-                left: 0;
-            }
-            #gameContainer {
-                width: 100vh;   /* 逻辑横屏尺寸 */
-                height: 100vw;
-            }
-            canvas {
-                width: 100vh;
-                height: 100vw;
-            }
-            }
+/* 竖屏时把整个容器横过来 */
+@media (orientation: portrait) {
+  body{height:100vw;width:100vh;transform:rotate(90deg);transform-origin:left top;
+       overflow:hidden;position:fixed;top:0;left:0;}
+  #gameContainer{width:100vh;height:100vw;}
+  canvas{width:100vh;height:100vw;}
+}
 
-
-        #scoreBoard {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 18px;
-        }
-        
-        #newChars {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-            max-width: 200px;
-        }
-        
-        .new-char {
-            display: inline-block;
-            margin: 3px;
-            padding: 5px 8px;
-            background: #4CAF50;
-            color: white;
-            border-radius: 3px;
-            animation: fadeIn 0.5s;
-            font-size: 16px;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.5); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        
-        #instructions {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        
-        #bulletSelector {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-        }
-        
-        .bullet-option {
-            display: inline-block;
-            margin: 5px;
-            padding: 10px;
-            background: #2196F3;
-            color: white;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            text-align: center;
-            line-height: 40px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            font-size: 20px;
-        }
-        
-        .bullet-option:hover {
-            transform: scale(1.1);
-        }
-        
-        .bullet-option.selected {
-            background: #FF5722;
-            transform: scale(1.2);
-        }
-    </style>
+/* 通用样式 */
+body{margin:0;padding:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+font-family:Arial,helvetica,sans-serif;display:flex;justify-content:center;align-items:center;
+min-height:100vh;overflow:hidden;}
+#gameContainer{position:relative;background:#f0f0f0;border:2px solid #333;overflow:hidden;}
+#scoreBoard{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.9);padding:8px;border-radius:5px;font-size:16px;}
+#newChars{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.9);padding:8px;border-radius:5px;max-width:180px;font-size:14px;}
+.new-char{display:inline-block;margin:2px;padding:4px 6px;background:#4CAF50;color:white;border-radius:3px;animation:fadeIn .5s;}
+@keyframes fadeIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+#instructions{position:absolute;bottom:10px;left:10px;background:rgba(255,255,255,.9);padding:8px;border-radius:5px;font-size:12px;}
+#bulletSelector{position:absolute;bottom:10px;right:10px;background:rgba(255,255,255,.9);padding:8px;border-radius:5px;}
+.bullet-option{display:inline-block;margin:3px;padding:8px;background:#2196F3;color:white;border-radius:50%;width:36px;height:36px;text-align:center;line-height:36px;cursor:pointer;transition:transform .2s;font-size:18px;}
+.bullet-option:hover{transform:scale(1.1)}
+.bullet-option.selected{background:#FF5722;transform:scale(1.2)}
+#gameOver{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;background:rgba(255,255,255,.95);padding:20px;border-radius:8px;}
+#gameOver button{padding:8px 16px;font-size:16px;}
+</style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="canvas" width="800" height="600"></canvas>
-        <div id="scoreBoard">得分: <span id="score">0</span></div>
-        <div id="newChars">合成的新字: <br><span id="newCharsList"></span></div>
-        <div id="instructions">按住鼠标拉动弹弓，松开发射汉字！</div>
-        <div id="bulletSelector">
-            <div style="margin-bottom: 10px; font-weight: bold;">选择子弹:</div>
-            <div class="bullet-option selected" data-char="金">金</div>
-            <div class="bullet-option" data-char="木">木</div>
-            <div class="bullet-option" data-char="水">水</div>
-            <div class="bullet-option" data-char="火">火</div>
-            <div class="bullet-option" data-char="土">土</div>
-        </div>
+<div id="rotateHint">请横屏获得最佳体验<br>↻</div>
 
-        <div id="gameOver" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
-            <h2>游戏结束！得分：<span id="finalScore">0</span></h2>
-            <button onclick="location.reload()">重新开始</button>
-        </div>
-    </div>
+<div id="gameContainer">
+  <canvas id="canvas"></canvas>
+  <div id="scoreBoard">得分: <span id="score">0</span></div>
+  <div id="newChars">合成的新字:<br><span id="newCharsList"></span></div>
+  <div id="instructions">按住鼠标拉动弹弓，松开发射汉字！</div>
+  <div id="bulletSelector">
+    <div style="margin-bottom:6px;font-weight:bold;">选择子弹:</div>
+    <div class="bullet-option selected" data-char="金">金</div>
+    <div class="bullet-option" data-char="木">木</div>
+    <div class="bullet-option" data-char="水">水</div>
+    <div class="bullet-option" data-char="火">火</div>
+    <div class="bullet-option" data-char="土">土</div>
+  </div>
+  <div id="gameOver">
+    <h2>游戏结束！得分:<span id="finalScore">0</span></h2>
+    <button onclick="location.reload()">重新开始</button>
+  </div>
+</div>
 
-    <script>
+<script>
+/* ================= 常量 & 状态 ================= */
+const GRAVITY = 0.3;
+const FRICTION = 0.99;
+const COMBINATIONS = {
+  '金月':'钥','金水':'淦','金田':'钿','金女':'钕','金目':'钼',
+  '木木':'林','木口':'杏','木目':'相','人木':'休',"木子":'李',"木日":'杳','木土':'杜','木石':'柘','木工':'杠',
+  '水木':'沐','水女':'汝','水目':'泪','水山':'汕','水石':'泵','水田':'沺','水心':'沁','水日':'汨','水工':'江',
+  '火火':'炎','火人':'伙','火山':'灿','火田':'畑','火日':'炅',
+  '土火':'灶','土田':'里','土口':'吐','土木':'杜'
+};
 
-        const isPortrait = innerHeight > innerWidth;
-        const BASE_W = isPortrait ? innerHeight : innerWidth;
-        const BASE_H = isPortrait ? innerWidth  : innerHeight;
+let score = 0;
+let isAiming = false;
+let aimEnd = null;
+let selectedBullet = '金';
+let SLINGSHOT_X, SLINGSHOT_Y;   // 后面动态计算
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
 
-        const SLINGSHOT_X = BASE_W * 0.25;
-        const SLINGSHOT_Y = BASE_H * 0.75;
-        canvas.width  = BASE_W;
-        canvas.height = BASE_H;
+/* ================= 尺寸 & 横屏适配 ================= */
+function resizeGame() {
+  const isPortrait = innerHeight > innerWidth;
+  const W = isPortrait ? innerHeight : innerWidth;
+  const H = isPortrait ? innerWidth : innerHeight;
+  canvas.width = W;
+  canvas.height = H;
+  SLINGSHOT_X = W * 0.25;
+  SLINGSHOT_Y = H * 0.75;
+}
+resizeGame();
+addEventListener('resize', resizeGame);
+addEventListener('orientationchange', () => setTimeout(resizeGame, 200));
 
+/* ================= 游戏对象 ================= */
+class Character {
+  constructor(x, y, char) {
+    this.x = x; this.y = y; this.vx = 0; this.vy = 0;
+    this.char = char; this.radius = 25;
+    this.isShot = false; this.isActive = true; this.isProjectile = false;
+  }
+  static newProjectile() {
+    const p = new Character(SLINGSHOT_X, SLINGSHOT_Y, selectedBullet);
+    p.isProjectile = true; return p;
+  }
+  update() {
+    if (!this.isShot) return;
+    this.vy += GRAVITY; this.vx *= FRICTION; this.vy *= FRICTION;
+    this.x += this.vx; this.y += this.vy;
+    if (this.y > canvas.height + 50 || (this.y >= canvas.height - this.radius && Math.abs(this.vy) < 1)) {
+      if (this.isProjectile) projectile = Character.newProjectile();
+      else this.isActive = false;
+    }
+    if (this.x < this.radius || this.x > canvas.width - this.radius) {
+      this.vx = -this.vx * 0.8;
+      this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+    }
+  }
+  draw() {
+    ctx.save();
+    ctx.fillStyle = this.isProjectile ? '#FF6B6B' : '#FFD700';
+    ctx.strokeStyle = this.isProjectile ? '#FF4444' : '#FFA500';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#333'; ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(this.char, this.x, this.y);
+    ctx.restore();
+  }
+}
 
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // 游戏状态
-        let score = 0;
-        let newChars = [];
-        let isAiming = false;
-        let aimStart = null;
-        let aimEnd = null;
-        let selectedBullet = '金';
-        
-        // 物理常量
-        const GRAVITY = 0.3;
-        const FRICTION = 0.99;
-        
-        // 扩展的汉字库
-        const CHARS = ['日', '月', '水', '火', '木', '人', '口', '心', '山', '石', '田', '女', '子', '工', '目'];
-        const COMBINATIONS = {
-            '金月': '钥', '金水': '淦', '金田': '钿', '金女': '钕', '金目': '钼',
-            '木木': '林', '木口': '杏', '木目': '相', '人木': '休', "木子":'李', "木日":'杳','木土':'杜','木石':'柘', '木工':'杠',
-            '水木': '沐', '水女': '汝', '水目': '泪', '水山': '汕', '水石': '泵', '水田': '沺', '水心': '沁', '水日': '汨', '水工': '江',
-            '火火': '炎', '火人': '伙', '火山': '灿', '火田': '畑', '火日': '炅', 
-            '土火': '灶', '土田': '里',  '土口': '吐', '土木': '杜',        
-        };
-        
-        // 游戏对象
-        class Character {
-            constructor(x, y, char) {
-                this.x = x;
-                this.y = y;
-                this.vx = 0;
-                this.vy = 0;
-                this.char = char;
-                this.radius = 25;
-                this.isShot = false;
-                this.isActive = true;
-                this.isProjectile = false;
-            }
+/* ================= 靶子生成 ================= */
+function generateLoosePositions(count, minDist) {
+  const positions = []; let angle = 0, radius = 80, cx = canvas.width * 0.6, cy = canvas.height * 0.35;
+  for (let i = 0; i < count; i++) {
+    let x, y, ok; do {
+      x = cx + Math.cos(angle) * radius; y = cy + Math.sin(angle) * radius;
+      ok = positions.every(p => Math.hypot(p.x - x, p.y - y) >= minDist);
+      if (!ok) { angle += 0.5; radius += 5; }
+    } while (!ok);
+    positions.push({x, y}); angle += 0.9; radius += 8;
+  } return positions;
+}
 
-            // 在 Character 类里新增静态工厂：给外部调用
-            static newProjectile() {
-                const p = new Character(SLINGSHOT_X, SLINGSHOT_Y, selectedBullet);
-                p.isProjectile = true;
-                return p;
-            }
-            
-            update() {
-                if (!this.isShot) return;
+/* ================= 初始化 & 主循环 ================= */
+let characters = [], projectile = null;
+function init() {
+  const targetChars = ['日', '月', '水', '火', '木', '人', '口', '心', '山', '石', '田', '女', '子', '手', '目'];
+  const loosePos = generateLoosePositions(targetChars.length, 70);
+  targetChars.forEach((ch, i) => characters.push(new Character(loosePos[i].x, loosePos[i].y, ch)));
+  projectile = Character.newProjectile();
+}
 
-                this.vy += GRAVITY;
-                this.vx *= FRICTION;
-                this.vy *= FRICTION;
-                this.x += this.vx;
-                this.y += this.vy;
+const slingshotImg = new Image();
+slingshotImg.src = 'slingshot.png';
+slingshotImg.onload = () => { init(); gameLoop(); };
+slingshotImg.onerror = () => alert('slingshot.png 加载失败！');
 
-                // 出界 or 落地静止
-                if (this.y > canvas.height + 50 ||
-                (this.y >= canvas.height - this.radius && Math.abs(this.vy) < 1)) {
-                    if (this.isProjectile) {
-                        projectile = Character.newProjectile(); // ← 关键：全新子弹
-                    } else {
-                        this.isActive = false;   // 靶子正常消失
-                    }
-                }
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#87CEEB'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#90EE90'; ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
 
-                // 左右墙
-                if (this.x < this.radius || this.x > canvas.width - this.radius) {
-                    this.vx = -this.vx * 0.8;
-                    this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
-                }
-            }
+  drawSlingshot();
+  projectile.update(); projectile.draw();
+  characters.forEach(c => { c.update(); if (c.isActive) c.draw(); });
 
-            reset() {
-                this.x = SLINGSHOT_X;
-                this.y = SLINGSHOT_Y;
-                this.vx = 0;
-                this.vy = 0;
-                this.isShot = false;
-            }
-            
-            draw() {
-                ctx.save();
-                
-                if (this.isProjectile) {
-                    ctx.fillStyle = '#FF6B6B';
-                    ctx.strokeStyle = '#FF4444';
-                } else {
-                    ctx.fillStyle = '#FFD700';
-                    ctx.strokeStyle = '#FFA500';
-                }
-                
-                ctx.lineWidth = 2;
-                
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-                
-                ctx.fillStyle = '#333';
-                ctx.font = 'bold 24px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(this.char, this.x, this.y);
-                ctx.restore();
-            }
-        }
-        
-        // 游戏对象数组
-        let characters = [];
-        let projectile = null;
-        
-        // 初始化游戏
-        function init() {
-            // 创建更多目标汉字，随机位置
-            const targetChars = ['日', '月', '水', '火', '木', '人', '口', '心', '山', '石', '田', '女', '子', '手', '目'];
-            const loosePos = generateLoosePositions(targetChars.length, 70); // 70px 安全距离
-            targetChars.forEach((ch, i) => {
-                const {x, y} = loosePos[i];
-                characters.push(new Character(x, y, ch));
-            });
-            
-            // 创建弹丸
-            
-            projectile = Character.newProjectile();
-            projectile.isProjectile = true;
-        }
-        
-        // 绘制弹弓
-        /************  弹弓图片  ************/
-        const slingshotImg = new Image();
-        slingshotImg.src = 'slingshot.png';   // 放同一目录即可
+  // 碰撞检测
+  for (const t of characters) {
+    if (!t.isActive) continue;
+    const dx = projectile.x - t.x, dy = projectile.y - t.y, dist = Math.hypot(dx, dy);
+    if (dist < projectile.radius + t.radius) {
+      const angle = Math.atan2(dy, dx), force = 10;
+      t.vx = Math.cos(angle) * force; t.vy = Math.sin(angle) * force; t.isShot = true;
+      const combo = COMBINATIONS[projectile.char + t.char] || COMBINATIONS[t.char + projectile.char];
+      if (combo) addNewChar(combo);
+      projectile = Character.newProjectile();
+      score += 10; updateScore(); break;
+    }
+  }
+  characters = characters.filter(c => c.isActive);
 
-        function drawSlingshot() {
-            // 1. 画弹弓图片
-            ctx.drawImage(slingshotImg, SLINGSHOT_X - 100, SLINGSHOT_Y - 20, 200, 250);
+  // 结束判定
+  if (characters.length === 0 || (projectile.y > canvas.height + 100 && !projectile.isShot)) {
+    document.getElementById('finalScore').textContent = score;
+    document.getElementById('gameOver').style.display = 'block';
+  } else requestAnimationFrame(gameLoop);
+}
 
-             // 2. 默认皮筋（没拉弓时）
-            if (!isAiming) {
-                const relaxX = SLINGSHOT_X;          // V 谷底
-                const relaxY = SLINGSHOT_Y + 25;     // 比子弹低一点
-                ctx.strokeStyle = '#654321';
-                ctx.lineWidth = 4;
-                ctx.beginPath();
-                ctx.moveTo(SLINGSHOT_X - 70, SLINGSHOT_Y); // 左棍顶
-                ctx.lineTo(relaxX, relaxY);
-                ctx.lineTo(SLINGSHOT_X + 70, SLINGSHOT_Y + 20); // 右棍顶
-                ctx.stroke();
-            }
+/* =================  UI & 交互  ================= */
+function updateScore() { document.getElementById('score').textContent = score; }
+function addNewChar(c) {
+  score += 50;
+  const span = document.createElement('span'); span.className = 'new-char'; span.textContent = c;
+  document.getElementById('newCharsList').appendChild(span);
+}
 
-            // 2. 皮筋：从两根棍顶端出发
-            if (isAiming && aimEnd) {
-                const leftX  = SLINGSHOT_X - 70;   // 左棍中心
-                const leftY  = SLINGSHOT_Y;   // 顶端
-                const rightX = SLINGSHOT_X + 70;   // 右棍中心
-                const rightY = SLINGSHOT_Y + 20;   // 顶端
+function drawSlingshot() {
+  ctx.drawImage(slingshotImg, SLINGSHOT_X - 100, SLINGSHOT_Y - 20, 200, 250);
+  // 默认皮筋（托住子弹）
+  if (!isAiming) {
+    const relaxX = SLINGSHOT_X, relaxY = SLINGSHOT_Y + 25;
+    ctx.strokeStyle = '#654321'; ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(SLINGSHOT_X - 70, SLINGSHOT_Y);
+    ctx.lineTo(relaxX, relaxY);
+    ctx.lineTo(SLINGSHOT_X + 70, SLINGSHOT_Y + 20);
+    ctx.stroke();
+  }
+  // 拉弓皮筋
+  if (isAiming && aimEnd) {
+    projectile.x = aimEnd.x; projectile.y = aimEnd.y;
+    ctx.strokeStyle = '#654321'; ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(SLINGSHOT_X - 70, SLINGSHOT_Y);
+    ctx.lineTo(aimEnd.x, aimEnd.y);
+    ctx.lineTo(SLINGSHOT_X + 70, SLINGSHOT_Y + 20);
+    ctx.stroke();
+  }
+}
 
-                // 真子弹跟手
-                projectile.x = aimEnd.x;
-                projectile.y = aimEnd.y;
+let aimStart = null;
+canvas.addEventListener('mousedown', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  if (Math.hypot(x - SLINGSHOT_X, y - SLINGSHOT_Y) < 60) { isAiming = true; aimStart = {x: SLINGSHOT_X, y: SLINGSHOT_Y}; }
+});
+canvas.addEventListener('mousemove', e => {
+  if (!isAiming) return;
+  const rect = canvas.getBoundingClientRect();
+  aimEnd = {x: e.clientX - rect.left, y: e.clientY - rect.top};
+});
+document.addEventListener('mouseup', () => {
+  if (!isAiming || !aimEnd) return;
+  if (projectile && !projectile.isShot) {
+    projectile.isShot = true;
+    projectile.vx = (SLINGSHOT_X - aimEnd.x) * 0.2;
+    projectile.vy = (SLINGSHOT_Y - aimEnd.y) * 0.2;
+  }
+  isAiming = false; aimEnd = null;
+});
 
-                ctx.strokeStyle = '#654321';
-                ctx.lineWidth = 4;
-                ctx.beginPath();
-                ctx.moveTo(leftX, leftY);
-                ctx.lineTo(aimEnd.x, aimEnd.y);
-                ctx.lineTo(rightX, rightY);
-                ctx.stroke();
-
-
-            }
-        }
-        
-        
-
-        
-        // 检测碰撞
-        function checkCollisions() {
-            if (!projectile || !projectile.isShot) return;
-            
-            for (let char of characters) {
-                if (!char.isActive) continue;
-                
-                const dx = projectile.x - char.x;
-                const dy = projectile.y - char.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance < projectile.radius + char.radius) {
-                    // 碰撞处理
-                    const angle = Math.atan2(dy, dx);
-                    const force = 10;
-                    
-                    char.vx = Math.cos(angle) * force;
-                    char.vy = Math.sin(angle) * force;
-                    char.isShot = true;
-                    
-                    // 检查是否可以组合
-                    checkCombination(projectile.char, char.char);
-                    
-                    // 重置弹丸
-                    projectile.x = SLINGSHOT_X;
-                    projectile.y = SLINGSHOT_Y;
-                    projectile.vx = 0;
-                    projectile.vy = 0;
-                    projectile.isShot = false;
-                    
-                    score += 10;
-                    updateScore();
-                }
-            }
-        }
-        
-        // 检查汉字组合
-        function checkCombination(char1, char2) {
-            const combination = char1 + char2;
-            const reverseCombination = char2 + char1;
-            
-            if (COMBINATIONS[combination]) {
-                addNewChar(COMBINATIONS[combination]);
-            } else if (COMBINATIONS[reverseCombination]) {
-                addNewChar(COMBINATIONS[reverseCombination]);
-            }
-        }
-
-
-        function generateLoosePositions(count, minDist) {
-            const positions = [];
-            let angle = 0, radius = 80;          // 螺旋起始
-            const cx = 500, cy = 200;            // 中心偏右
-
-            for (let i = 0; i < count; i++) {
-                let x, y, ok;
-                do {                             // 碰撞检测
-                    x = cx + Math.cos(angle) * radius;
-                    y = cy + Math.sin(angle) * radius;
-                    ok = positions.every(p => Math.hypot(p.x - x, p.y - y) >= minDist);
-                    if (!ok) {                   // 重叠就放大半径/角度
-                        angle += 0.5;
-                        radius += 5;
-                    }
-                } while (!ok);
-
-                positions.push({x, y});
-                angle += 0.9;                    // 继续螺旋
-                radius += 8;
-            }
-            return positions;
-        }
-        
-        // 添加新字
-        function addNewChar(newChar) {
-            newChars.push(newChar);
-            const newCharElement = document.createElement('span');
-            newCharElement.className = 'new-char';
-            newCharElement.textContent = newChar;
-            document.getElementById('newCharsList').appendChild(newCharElement);
-            
-            score += 50;
-            updateScore();
-        }
-        
-        // 更新分数
-        function updateScore() {
-            document.getElementById('score').textContent = score;
-        }
-
-
-        function showGameOver() {
-            document.getElementById('finalScore').textContent = score;
-            document.getElementById('gameOver').style.display = 'block';
-        }
-        
-
-
-        // 游戏循环
-        function gameLoop() {
-
-
-            checkCollisions();
-            characters = characters.filter(c => c.isActive);
-
-            // 结束条件
-            // ✅ 绘制完成后再检测
-            if (characters.length === 0 || (projectile.y > canvas.height + 100 && !projectile.isShot)) {
-                showGameOver();
-                // 不再 requestAnimationFrame 即可自然停止，不要 return
-            } else {
-                requestAnimationFrame(gameLoop); // 只有未结束才继续
-            }
-
-
-
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // 绘制背景
-            ctx.fillStyle = '#87CEEB';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // 绘制地面
-            ctx.fillStyle = '#90EE90';
-            ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
-            
-            // 绘制弹弓
-            drawSlingshot();
-            
-            // 更新和绘制所有字符
-            if (projectile) {
-                projectile.update();
-                projectile.draw();
-            }
-            
-            for (let char of characters) {
-                char.update();
-                if (char.isActive) {
-                    char.draw();
-                }
-            }
-            
-            // 检测碰撞
-            checkCollisions();
-            
-            // 移除非活跃字符
-            characters = characters.filter(char => char.isActive);
-            
-            // requestAnimationFrame(gameLoop);
-        }
-        
-        // 鼠标事件处理
-        canvas.addEventListener('mousedown', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            if (Math.sqrt((x - SLINGSHOT_X) ** 2 + (y - SLINGSHOT_Y) ** 2) < 50) {
-                isAiming = true;
-                aimStart = { x: SLINGSHOT_X, y: SLINGSHOT_Y };
-            }
-        });
-
-
-
-        
-        canvas.addEventListener('mousemove', (e) => {
-            if (!isAiming) return;
-            
-            const rect = canvas.getBoundingClientRect();
-            aimEnd = {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
-            };
-        });
-        
-        document.addEventListener('mouseup', () => {
-            if (!isAiming || !aimEnd) return;
-            
-            // 发射
-            if (projectile && !projectile.isShot) {
-                projectile.isShot = true;
-                projectile.vx = (SLINGSHOT_X - aimEnd.x) * 0.2;
-                projectile.vy = (SLINGSHOT_Y - aimEnd.y) * 0.2;
-            }
-            
-            isAiming = false;
-            aimEnd = null;
-        });
-        
-        // 子弹选择器事件
-        document.querySelectorAll('.bullet-option').forEach(option => {
-            option.addEventListener('click', (e) => {
-                document.querySelectorAll('.bullet-option').forEach(opt => opt.classList.remove('selected'));
-                e.target.classList.add('selected');
-                selectedBullet = e.target.dataset.char;
-                if (projectile && !projectile.isShot) {
-                    projectile = Character.newProjectile();
-                }
-            });
-        });
-        
-        // 启动游戏
-
-        //init();
-        //gameLoop();
-
-
-        slingshotImg.onload = () => {
-            init();
-            gameLoop();
-        };
-
-    </script>
+document.querySelectorAll('.bullet-option').forEach(opt => opt.addEventListener('click', e => {
+  document.querySelectorAll('.bullet-option').forEach(o => o.classList.remove('selected'));
+  e.target.classList.add('selected'); selectedBullet = e.target.dataset.char;
+  if (projectile && !projectile.isShot) projectile.char = selectedBullet;
+}));
+</script>
 </body>
 </html>

@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>汉字射击游戏</title>
     <style>
+        #rotateHint{
+            position:fixed; inset:0; background:#000c;
+            color:#fff; font-size:5vw; display:flex;
+            align-items:center; justify-content:center;
+            z-index:9999; display:none;
+            }
+            @media (orientation: portrait){
+            #rotateHint{ display:flex; }
+            }
+
         body {
             margin: 0;
             padding: 0;

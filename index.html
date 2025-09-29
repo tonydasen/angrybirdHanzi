@@ -136,6 +136,17 @@
     </div>
 
     <script>
+
+        const isPortrait = innerHeight > innerWidth;
+        const BASE_W = isPortrait ? innerHeight : innerWidth;
+        const BASE_H = isPortrait ? innerWidth  : innerHeight;
+
+        const SLINGSHOT_X = BASE_W * 0.25;
+        const SLINGSHOT_Y = BASE_H * 0.75;
+        canvas.width  = BASE_W;
+        canvas.height = BASE_H;
+
+
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
@@ -150,8 +161,6 @@
         // 物理常量
         const GRAVITY = 0.3;
         const FRICTION = 0.99;
-        const SLINGSHOT_X = 100;
-        const SLINGSHOT_Y = 450;
         
         // 扩展的汉字库
         const CHARS = ['日', '月', '水', '火', '木', '人', '口', '心', '山', '石', '田', '女', '子', '工', '目'];

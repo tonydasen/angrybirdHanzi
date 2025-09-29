@@ -60,6 +60,8 @@ min-height:100vh;overflow:hidden;}
 
 <script>
 /* ================= 常量 & 状态 ================= */
+const synthesized = new Set();   // 记录已合成字
+
 const GRAVITY = 0.3;
 const FRICTION = 0.99;
 const COMBINATIONS = {
@@ -190,8 +192,12 @@ function gameLoop() {
 /* =================  UI & 交互  ================= */
 function updateScore() { document.getElementById('score').textContent = score; }
 function addNewChar(c) {
+  if (synthesized.has(c)) return;   // 重复直接跳过
+  synthesized.add(c);
   score += 50;
-  const span = document.createElement('span'); span.className = 'new-char'; span.textContent = c;
+  const span = document.createElement('span');
+  span.className = 'new-char';
+  span.textContent = c;
   document.getElementById('newCharsList').appendChild(span);
 }
 
